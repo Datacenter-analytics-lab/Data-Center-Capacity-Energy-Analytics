@@ -17,8 +17,9 @@
 9. [Recommendations](#recommendations)
 10. [Reliability & data governance](#reliability--data-governance)
 11. [Incident deep dive](#incident-deep-dive)
-12. [What this model does NOT prove](#what-this-model-does-not-prove)
-13. [Sample data & sources](#sample-data--sources)
+12. [Model validation](#model-validation)
+13. [What this model does NOT prove](#what-this-model-does-not-prove)
+14. [Sample data & sources](#sample-data--sources)
 
 ## Executive summary
 
@@ -186,7 +187,7 @@ Cooling crosses zero headroom at **~70 kW** of additional load and stays the bin
 
 Each recommendation below is tied to a modelled finding, not a generic best practice — and sequenced deliberately, since applying them out of order would undo the capacity fix in §7.
 
-1. **Install an automatic capacitor bank.** Power factor drops below 0.95 at peak load (`ALM-0008`), driven by cooling motor inductive load — not a random glitch, a predictable consequence of running cooling equipment near its rated output. A capacitor bank corrects this, avoids utility power-factor penalties, and frees up real transformer capacity (kW) that inductive reactive load is currently consuming.
+1. **Potential mitigation: power-factor correction, subject to harmonic and electrical-system assessment.** Power factor drops below 0.95 at peak load (`ALM-0008`), consistent with increased inductive loading from cooling equipment — the model does not explicitly simulate motor reactive components, so this is a correlation the data supports, not a modelled causal mechanism. Correcting power factor would primarily improve **kVA headroom / transformer utilization** for the same active (kW) load, and avoid utility power-factor penalties — not reduce the site's real active power draw.
 2. **Consider modular UPS for the next capacity expansion.** UPS units run at 43.4% utilization on average — a direct, unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
 3. **Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§4) are negligible.** This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
 
@@ -214,7 +215,23 @@ A chiller degradation incident (`ALM-0003`) is embedded in the data, with effect
 
 With three chillers, compensation is shared between the two healthy units (178 and 183 kWth each) instead of falling entirely on one, as it would under the original two-chiller design.
 
-**Thermal grace period:** the degradation alarm fires at 03:22; the room temperature alarm doesn't trigger until 04:05 — a 43-minute window driven by thermal inertia and redundant compensation, during which an operations team can react before any hardware risk.
+**Thermal grace period:** the degradation alarm fires at 03:22; the room temperature alarm doesn't trigger until 04:05 — a 43-minute window driven by thermal inertia and redundant compensation, during which an operations team has a simulated intervention window before the defined room-temperature threshold is reached.
+
+## Model validation
+
+Every claim above rests on an explicit check, not an assumption that the model "should" be consistent.
+
+| Check | Expected | Result |
+|---|---|---|
+| IT load reconciliation | Room A + Room B = site IT load | PASS |
+| Thermal balance | IT + UPS + distribution + lighting + people = total thermal load | PASS |
+| PUE decomposition | Base + cooling + UPS + auxiliary contributions sum to measured PUE | PASS |
+| N+1 cooling | Available capacity > peak demand | PASS (+74 kWth, after correction) |
+| N+1 UPS | Available capacity > peak demand | PASS (+144 kW) |
+| N+1 electrical | Available capacity > peak demand | PASS (+118 kW) |
+| Meter reconciliation | Independent meter reading vs. sum of components | PASS (<1% variance) |
+| Duplicate detection | `ALM-0007` identified and quantified | PASS (7.1% duplicate rate) |
+| Overlapping downtime | Concurrent alarms merged, not double-counted | PASS (8.18h → 4.47h) |
 
 ## What this model does NOT prove
 
