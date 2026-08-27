@@ -43,18 +43,18 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 | Capacity | How much capacity remains? | Cooling is limiting, **~74 kWth** headroom at peak |
 | Resilience | Can we lose one critical component? | Yes — N+1 maintained on all three pillars |
 | Reliability | Did the simulated incidents affect IT service? | No — **100% IT service availability** |
-| Growth | Can we add more IT load? | **~70 kW recommended**, ~80 kW not recommended |
+| Growth | Can we add more IT load? | **+50 kW: recommended planning range**. +70 kW: upper simulated limit. +80 kW+: not recommended |
 | Optimization | Where should we optimize? | Cooling setpoint, but only *after* protecting the thermal N+1 margin |
 | Data quality | Can we trust the data? | Duplicates are detected and quantified; sources reconcile within noise |
 
 ## Architecture
 
-Strict star schema. Every fact table carries a physically independent measurement — no fact-to-fact relationships, no value derived from another table's formula.
+Strict star schema. Each fact table represents an independent measurement or simulated telemetry stream — derived engineering quantities (like `FACT_Thermal_Load`, built from IT load + losses + lighting + occupants) are explicitly identified as model outputs, not raw sensor readings. No fact-to-fact relationships: everything correlates through shared dimensions.
 
 **Infrastructure at a glance:**
-- **Power:** 2 transformers of 800 kW each(simplified active-power model), N+1 (either one alone covers the full site load)
+- **Power:** 2 transformers of 800 kW each, N+1 (either one alone covers the full site load)
 - **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
-- **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after)
+- **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after). Cooling medium (chilled water vs. direct expansion) and physical loop topology are **not specified** in the model — it tests capacity, not piping design, which would require a real engineering drawing.
 
 ![Star schema](figures/01_star_schema.png)
 
@@ -66,6 +66,62 @@ Strict star schema. Every fact table carries a physically independent measuremen
 | `FACT_Cooling` | Timestamp × Chiller | 8,064 | 3 chillers, thermal + electrical measurements |
 | `FACT_Electrical_Meter` | Timestamp | 2,688 | Facility power at the meter |
 | `FACT_Alarms` | Event | 14 | Incidents, planned maintenance, downtime |
+
+**Column-level detail** (analytically relevant columns only — each table carries a few more housekeeping fields):
+
+`FACT_IT_Load`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Timestamp | datetime | 15-min interval | Simulation |
+| Room_ID | text | Room A / Room B | Simulation |
+| IT_Load_kW | decimal | IT power draw | Model |
+| Status | text | Active / etc. | Simulation |
+
+`FACT_UPS`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Timestamp | datetime | 15-min interval | Simulation |
+| UPS_ID | text | Equipment identifier | Simulation |
+| Output_Load_kW | decimal | Power delivered to IT | Model |
+| UPS_Loss_kW | decimal | No-load + proportional loss | Derived |
+| Load_Percent | decimal | Output ÷ rated capacity | Derived |
+| Status | text | Online / Maintenance / Fault / Bypass | Simulation |
+
+`FACT_Thermal_Load`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Timestamp | datetime | 15-min interval | Simulation |
+| IT_Thermal_Load_kWth | decimal | IT heat (1:1 from IT load) | Derived |
+| UPS_Thermal_Load_kWth | decimal | UPS loss as heat | Derived |
+| Power_Distribution_Thermal_Load_kWth | decimal | Distribution loss as heat | Derived |
+| Total_Thermal_Load_kWth | decimal | Sum of all thermal sources | Derived |
+
+`FACT_Cooling`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Timestamp | datetime | 15-min interval | Simulation |
+| Cooling_Equipment_ID | text | Chiller identifier | Simulation |
+| Cooling_Power_kW | decimal | Electrical input | Model |
+| Cooling_Output_kWth | decimal | Thermal output | Model |
+| Efficiency_COP | decimal | Output ÷ electrical input | Derived |
+| Status | text | Active / Degraded | Simulation |
+| Alarm_Code | text | Linked alarm, if any | Simulation |
+
+`FACT_Electrical_Meter`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Timestamp | datetime | 15-min interval | Simulation |
+| Power_kW | decimal | Total facility power | Model (independent meter, not derived by formula) |
+| PowerFactor | decimal | Active ÷ apparent power | Model |
+
+`FACT_Alarms`
+| Column | Type | Meaning | Source |
+|---|---|---|---|
+| Alarm_ID | text | Event identifier (1 deliberate duplicate) | Simulation |
+| Start_Timestamp / End_Timestamp | datetime | Event window | Simulation |
+| Equipment_ID | text | Linked equipment | Simulation |
+| Service_Impacting | boolean | Component-level impact flag | Simulation |
+| IT_Outage | boolean | Actual IT service interruption (always False in this run) | Simulation |
 
 ## Data model
 
@@ -167,19 +223,30 @@ Zero additional installed capacity. This is the architecture applied in the fina
 
 ## Capacity planning & decisions
 
-Using the `DIM_Scenario` table (§4), remaining cooling headroom is projected against additional IT load:
+Using the `DIM_Scenario` table (§4), remaining headroom at each subsystem is queried directly from the model for every scenario — not interpolated:
+
+| Additional IT | Cooling headroom | UPS headroom | Electrical headroom | Binding constraint | Verdict |
+|---|---|---|---|---|---|
+| 0 kW | 74.4 kWth | 144.4 kW | 117.7 kW | Cooling | Baseline (ACCEPTABLE) |
+| +20 kW | 53.0 kWth | 124.4 kW | 97.7 kW | Cooling | ACCEPTABLE |
+| +50 kW | 20.9 kWth | 94.4 kW | 67.7 kW | Cooling | Recommended planning range |
+| +70 kW | −0.5 kWth | 74.4 kW | 47.7 kW | Cooling | Upper simulated limit |
+| +80 kW | −11.2 kWth | 64.4 kW | 37.7 kW | Cooling | Not recommended |
+| +100 kW | −32.6 kWth | 44.4 kW | 17.7 kW | Cooling | Not recommended |
+
+The exact tipping point sits at **~69.5 kW** — 70 kW itself already crosses it, by a margin so thin (−0.5 kWth) it's effectively the boundary, not a comfortable cutoff.
 
 ![IT growth scenarios](figures/06_it_growth_scenarios.png)
 
-Cooling crosses zero headroom at **~70 kW** of additional load and stays the binding constraint throughout — electrical (118 kW) and UPS (144 kW) headroom remain positive even at 100 kW added.
+Cooling stays the binding constraint throughout the tested range — electrical (118 kW) and UPS (144 kW) headroom remain positive even at 100 kW added.
 
 | Decision | Verdict | Basis |
 |---|---|---|
 | Maintain N+1 UPS | ACCEPT | 144 kW margin |
 | Maintain N+1 cooling | ACCEPT | 74 kW margin |
-| Add 50 kW IT | ACCEPT | All margins positive |
-| Add 70 kW IT | ACCEPT / MONITOR | Cooling near limit |
-| Add 80 kW IT | NOT RECOMMENDED | Cooling constraint breached |
+| Add 50 kW IT | Recommended planning range | All margins comfortably positive |
+| Add 70 kW IT | Upper simulated limit | Cooling headroom −0.5 kWth — the model's own decision measure already flips to NOT RECOMMENDED here |
+| Add 80 kW IT | Not recommended | Cooling constraint breached |
 | Remove one UPS (2 instead of 3) | REJECT | Resilience lost for a 0.02 PUE gain |
 | Raise cooling setpoint (18°C→22°C) | CONDITIONAL | Energy gain vs. thermal margin — sequence after the capacity fix above |
 
