@@ -31,9 +31,9 @@ data center or replace electrical/mechanical engineering studies.
 
 ## Executive summary
 
-This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
+This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number
 
-The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth restored it **at the same installed capacity** — no increase in kWth, though re-sizing physical equipment is not a zero-cost exercise in a real deployment. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
+The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth restored it **at the same installed capacity** — no increase in kWth
 
 > **North Star Metric: Binding Constraint N+1 Headroom**
 > The lowest N+1 margin among the three critical subsystems (electrical, UPS, cooling) — whichever one it is, that's the number that actually caps growth and defines "safe." It currently sits at cooling (+74 kWth), but the metric isn't tied to cooling specifically: if cooling capacity were increased further, this North Star would simply track whichever subsystem became the new binding constraint.
