@@ -29,10 +29,10 @@ This project simulates 28 days of operation for a Tier III–aligned data center
 
 The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
 
-> **North Star Metric: Cooling N+1 Headroom at Peak**
-> This is the single figure the rest of the analysis revolves around — it's what failed in the original design, what the correction restored, and what ultimately caps how much IT growth the site can accept.
->
-> | | Original design | Corrected design |
+> **North Star Metric: Binding Constraint N+1 Headroom**
+The lowest N+1 margin among the three critical subsystems (electrical, UPS, cooling) — whichever one it is, that's the number that actually caps growth and defines "safe." It currently sits at cooling (+74 kWth), but the metric isn't tied to cooling specifically: if cooling capacity were increased further, this North Star would simply track whichever subsystem became the new binding constraint.
+> 
+> | Binding constraint| Original design | Corrected design |
 > |---|---|---|
 > | Cooling N+1 headroom at peak | **−76 kWth** | **+74 kWth** |
 
