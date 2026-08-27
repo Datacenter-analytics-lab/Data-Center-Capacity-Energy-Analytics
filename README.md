@@ -4,8 +4,6 @@
 
 > **Disclaimer:** All operational data in this repository are synthetic and generated for analytical demonstration. No confidential operational data are used.
 
----
-
 ## Table of contents
 
 1. [Executive summary](#executive-summary)
@@ -16,27 +14,25 @@
 6. [Key metrics](#key-metrics)
 7. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
 8. [Capacity planning & decisions](#capacity-planning--decisions)
-9. [Reliability & data governance](#reliability--data-governance)
-10. [Incident deep dive](#incident-deep-dive)
-11. [What this model does NOT prove](#what-this-model-does-not-prove)
-12. [Sample data & sources](#sample-data--sources)
-
----
+9. [Recommendations](#recommendations)
+10. [Reliability & data governance](#reliability--data-governance)
+11. [Incident deep dive](#incident-deep-dive)
+12. [What this model does NOT prove](#what-this-model-does-not-prove)
+13. [Sample data & sources](#sample-data--sources)
 
 ## Executive summary
 
-This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number.
+This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
 
-The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
+The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth restored it **at the same installed capacity** — no increase in kWth, though re-sizing physical equipment is not a zero-cost exercise in a real deployment. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
 
 > **North Star Metric: Binding Constraint N+1 Headroom**
-The lowest N+1 margin among the three critical subsystems (electrical, UPS, cooling) — whichever one it is, that's the number that actually caps growth and defines "safe." It currently sits at cooling (+74 kWth), but the metric isn't tied to cooling specifically: if cooling capacity were increased further, this North Star would simply track whichever subsystem became the new binding constraint.
-> 
-> | Binding constraint| Original design | Corrected design |
+> The lowest N+1 margin among the three critical subsystems (electrical, UPS, cooling) — whichever one it is, that's the number that actually caps growth and defines "safe." It currently sits at cooling (+74 kWth), but the metric isn't tied to cooling specifically: if cooling capacity were increased further, this North Star would simply track whichever subsystem became the new binding constraint.
+>
+> | | Original design | Corrected design |
 > |---|---|---|
-> | Cooling N+1 headroom at peak | **−76 kWth** | **+74 kWth** |
-
----
+> | Binding constraint | Cooling | Cooling |
+> | N+1 headroom at peak | **−76 kWth** | **+74 kWth** |
 
 ## Business questions
 
@@ -50,11 +46,14 @@ The lowest N+1 margin among the three critical subsystems (electrical, UPS, cool
 | Optimization | Where should we optimize? | Cooling setpoint, but only *after* protecting the thermal N+1 margin |
 | Data quality | Can we trust the data? | Duplicates are detected and quantified; sources reconcile within noise |
 
----
-
 ## Architecture
 
-Strict star schema. Every fact table carries a physically independent measurement — No fact table is used as a calculated substitute for another fact table's measurement.
+Strict star schema. Every fact table carries a physically independent measurement — no fact-to-fact relationships, no value derived from another table's formula.
+
+**Infrastructure at a glance:**
+- **Power:** 2 transformers of 800 kW each, N+1 (either one alone covers the full site load)
+- **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
+- **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after)
 
 ![Star schema](figures/01_star_schema.png)
 
@@ -66,8 +65,6 @@ Strict star schema. Every fact table carries a physically independent measuremen
 | `FACT_Cooling` | Timestamp × Chiller | 8,064 | 3 chillers, thermal + electrical measurements |
 | `FACT_Electrical_Meter` | Timestamp | 2,688 | Facility power at the meter |
 | `FACT_Alarms` | Event | 14 | Incidents, planned maintenance, downtime |
-
----
 
 ## Data model
 
@@ -96,17 +93,13 @@ Every number elsewhere in this document is either measured by the simulation, fi
 | Redundancy topology | N+1 | Architecture |
 | Generator telemetry | Not modelled | Limitation |
 
----
-
 ## Simulation methodology
 
-The Schneider methodology was used as an additional sizing reference: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
+Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
 
 ![Thermal load breakdown](figures/02_thermal_breakdown.png)
 
 Data generation uses no non-deterministic random function: noise is a trigonometric hash indexed on timestamp and equipment ID, so every model refresh produces identical results — a reproducibility requirement, not a cosmetic detail.
-
----
 
 ## Key metrics
 
@@ -136,7 +129,23 @@ Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 
 
 ![Capacity constraint](figures/05_capacity_constraint.png)
 
----
+### Peak Energy Balance
+
+"Peak IT load" and "peak facility power" don't occur at the same 15-minute interval — the model was queried directly for both moments, not reconstructed from averages.
+
+| | Peak IT moment (14 Aug, 15:00) | True facility power peak (12 Aug, 15:15) |
+|---|---|---|
+| IT load | 455.6 kW | 454.7 kW |
+| Thermal load | 523.8 kWth | 524.9 kWth |
+| **COP at that moment** | 3.58 | **3.34** |
+| Cooling electrical load | 146.3 kW | **157.3 kW** |
+| UPS losses | 46.8 kW | 48.8 kW |
+| Distribution losses | 15.1 kW | 15.1 kW |
+| Lighting / people | 6.3 kW | 6.3 kW |
+| **Facility power** | 670.9 kW | **682.3 kW** |
+| **PUE at that moment** | 1.47 | **1.50** |
+
+Balance check: sums to within 0.1 kW of the measured value — the residual is the meter's own independent noise term, not an error. The facility-power peak doesn't occur when IT is highest; it occurs when a below-average COP (3.34, within the model's ±0.3 COP noise) pushes cooling electrical draw to its own peak, independent of IT.
 
 ## The main finding: cooling redundancy, before and after
 
@@ -154,8 +163,6 @@ Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 
 | **Corrected: 3 × 300 kWth** | **900 kWth (unchanged)** | **600 kWth** | **+74 kWth** |
 
 Zero additional installed capacity. This is the architecture applied in the final model — every metric elsewhere in this document reflects the corrected state.
-
----
 
 ## Capacity planning & decisions
 
@@ -175,16 +182,14 @@ Cooling crosses zero headroom at **~70 kW** of additional load and stays the bin
 | Remove one UPS (2 instead of 3) | REJECT | Resilience lost for a 0.02 PUE gain |
 | Raise cooling setpoint (18°C→22°C) | CONDITIONAL | Energy gain vs. thermal margin — sequence after the capacity fix above |
 
----
 ## Recommendations
 
 Each recommendation below is tied to a modelled finding, not a generic best practice — and sequenced deliberately, since applying them out of order would undo the capacity fix in §7.
 
-- Install an automatic capacitor bank. Power factor drops below 0.95 at peak load (ALM-0008), driven by cooling motor inductive load — not a random glitch, a predictable consequence of running cooling equipment near its rated output. A capacitor bank corrects this, avoids utility power-factor penalties, and frees up real transformer capacity (kW) that inductive reactive load is currently consuming.
-- Consider modular UPS for the next capacity expansion. UPS units run at 43.4% utilization on average — a direct, unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
-Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§4) are negligible. This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
+1. **Install an automatic capacitor bank.** Power factor drops below 0.95 at peak load (`ALM-0008`), driven by cooling motor inductive load — not a random glitch, a predictable consequence of running cooling equipment near its rated output. A capacitor bank corrects this, avoids utility power-factor penalties, and frees up real transformer capacity (kW) that inductive reactive load is currently consuming.
+2. **Consider modular UPS for the next capacity expansion.** UPS units run at 43.4% utilization on average — a direct, unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
+3. **Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§4) are negligible.** This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
 
----
 ## Reliability & data governance
 
 100% IT service availability over 28 days is a **simulation result**, not proof the site meets the Uptime Institute's Tier III annual target (99.982%, 1.6h/year) — the window is too short to extrapolate, and Tier III status can only be conferred by an Uptime Institute audit of a real facility. This project does not claim certification.
@@ -199,9 +204,7 @@ Evaluate hot/cold aisle containment before assuming the humidification and build
 
 Concurrent maintainability is demonstrated on **all three infrastructure pillars**, each with zero IT impact: `ALM-0006` (UPS maintenance), `ALM-0012` (chiller maintenance), `ALM-0013` (transformer maintenance).
 
-**Data quality:** the `ALM-0007` duplicate is kept intentionally rather than silently removed, to demonstrate a deduplication calculation (7.1%) instead of hiding the defect. The independent electrical meter reading reconciles with the sum of its component sub-systems (IT + cooling + UPS losses + auxiliary) within noise (<1%) — a deliberate design choice that lets the model surface this kind of cross-source check. `ALM-0008` (power factor dropping below 0.95 during peak load, from cooling motor inductive load) is the basis for recommending an automatic capacitor bank to avoid utility penalties and free up transformer capacity.
-
----
+**Data quality:** the `ALM-0007` duplicate is kept intentionally rather than silently removed, to demonstrate a deduplication calculation (7.1%) instead of hiding the defect. The independent electrical meter reading reconciles with the sum of its component sub-systems (IT + cooling + UPS losses + auxiliary) within noise (<1%) — a deliberate design choice that lets the model surface this kind of cross-source check. `ALM-0008` (power factor below 0.95 during peak load) is addressed in [Recommendations](#recommendations).
 
 ## Incident deep dive
 
@@ -212,8 +215,6 @@ A chiller degradation incident (`ALM-0003`) is embedded in the data, with effect
 With three chillers, compensation is shared between the two healthy units (178 and 183 kWth each) instead of falling entirely on one, as it would under the original two-chiller design.
 
 **Thermal grace period:** the degradation alarm fires at 03:22; the room temperature alarm doesn't trigger until 04:05 — a 43-minute window driven by thermal inertia and redundant compensation, during which an operations team can react before any hardware risk.
-
----
 
 ## What this model does NOT prove
 
@@ -226,7 +227,7 @@ This simulation does **not**:
 
 Every figure here is either a direct simulation output or an explicitly labelled assumption — where a result depends on one (COP sensitivity, floor area, headcount), that dependency is stated next to the number, not buried in a footnote.
 
----
+**Note on real-world equipment sizing.** This model expresses transformer capacity in kW (active power) throughout. In practice, transformers are usually nameplate-rated in kVA (apparent power), converted to kW via a power factor (commonly ~0.8) — see Schneider Electric White Paper 3, *Calculating Total Power Requirements for Data Centers*. This is business context, not a feature of this model: no kVA rating or power factor is stored or computed anywhere in the underlying data.
 
 ## Sample data & sources
 
