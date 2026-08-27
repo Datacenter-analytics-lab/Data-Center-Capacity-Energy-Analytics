@@ -52,7 +52,7 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 Strict star schema. Each fact table represents an independent measurement or simulated telemetry stream — derived engineering quantities (like `FACT_Thermal_Load`, built from IT load + losses + lighting + occupants) are explicitly identified as model outputs, not raw sensor readings. No fact-to-fact relationships: everything correlates through shared dimensions.
 
 **Infrastructure at a glance:**
-- **Power:** 2 transformers of 800 kW each, N+1 (either one alone covers the full site load)
+- **Power:** 2 transformers of 800 kW each (simplified active-power model), N+1 (either one alone covers the full site load)
 - **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
 - **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after). Cooling medium (chilled water vs. direct expansion) and physical loop topology are **not specified** in the model — it tests capacity, not piping design, which would require a real engineering drawing.
 
