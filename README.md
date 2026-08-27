@@ -8,19 +8,37 @@
 
 ## Table of contents
 
-1. [What this model answers](#what-this-model-answers)
-2. [Architecture & assumptions](#architecture--assumptions)
-3. [Methodology & key metrics](#methodology--key-metrics)
-4. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
-5. [Capacity planning & decisions](#capacity-planning--decisions)
-6. [Reliability & data governance](#reliability--data-governance)
-7. [Incident deep dive](#incident-deep-dive)
-8. [What this model does NOT prove](#what-this-model-does-not-prove)
-9. [Sample data & sources](#sample-data--sources)
+1. [Executive summary](#executive-summary)
+2. [Business questions](#business-questions)
+3. [Architecture](#architecture)
+4. [Data model](#data-model)
+5. [Simulation methodology](#simulation-methodology)
+6. [Key metrics](#key-metrics)
+7. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
+8. [Capacity planning & decisions](#capacity-planning--decisions)
+9. [Reliability & data governance](#reliability--data-governance)
+10. [Incident deep dive](#incident-deep-dive)
+11. [What this model does NOT prove](#what-this-model-does-not-prove)
+12. [Sample data & sources](#sample-data--sources)
 
 ---
 
-## What this model answers
+## Executive summary
+
+This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
+
+The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this at zero additional cost. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
+
+> **North Star Metric: Cooling N+1 Headroom at Peak**
+> This is the single figure the rest of the analysis revolves around — it's what failed in the original design, what the correction restored, and what ultimately caps how much IT growth the site can accept.
+>
+> | | Original design | Corrected design |
+> |---|---|---|
+> | Cooling N+1 headroom at peak | **−76 kWth** | **+74 kWth** |
+
+---
+
+## Business questions
 
 | # | Question | Answer |
 |---|---|---|
@@ -34,7 +52,7 @@
 
 ---
 
-## Architecture & assumptions
+## Architecture
 
 Strict star schema. Every fact table carries a physically independent measurement — no fact-to-fact relationships, no value derived from another table's formula.
 
@@ -48,9 +66,24 @@ Strict star schema. Every fact table carries a physically independent measuremen
 | `FACT_Cooling` | Timestamp × Chiller | 8,064 | 3 chillers, thermal + electrical measurements |
 | `FACT_Electrical_Meter` | Timestamp | 2,688 | Facility power at the meter |
 | `FACT_Alarms` | Event | 14 | Incidents, planned maintenance, downtime |
-| `DIM_Scenario` *(planning layer)* | Scenario | 6 | Discrete additional-IT-load scenarios (0 → 100 kW), used in [§5](#capacity-planning--decisions) |
 
-Every number below is either measured by the simulation, fixed by design, or an explicit assumption — none are presented as manufacturer data.
+---
+
+## Data model
+
+`DIM_Scenario` is the planning layer used for capacity projections in [§8](#capacity-planning--decisions):
+
+```
+Scenario_ID   Additional_IT_kW
+S00           0
+S01           20
+S02           50
+S03           70
+S04           80
+S05           100
+```
+
+Every number elsewhere in this document is either measured by the simulation, fixed by design, or an explicit assumption — none are presented as manufacturer data.
 
 | Parameter | Value | Type |
 |---|---|---|
@@ -65,13 +98,21 @@ Every number below is either measured by the simulation, fixed by design, or an 
 
 ---
 
-## Methodology & key metrics
+## Simulation methodology
 
-Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§4) — not as a claim about any specific equipment's real-world behaviour.
+Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
 
 ![Thermal load breakdown](figures/02_thermal_breakdown.png)
 
-| Energy (28-day totals) | Value |
+Data generation uses no non-deterministic random function: noise is a trigonometric hash indexed on timestamp and equipment ID, so every model refresh produces identical results — a reproducibility requirement, not a cosmetic detail.
+
+---
+
+## Key metrics
+
+### Energy (28-day totals)
+
+| KPI | Value |
 |---|---|
 | IT Energy | 262.8 MWh |
 | Facility Energy | 393.8 MWh |
@@ -81,9 +122,11 @@ Thermal load follows the Schneider Electric White Paper 25 methodology: IT elect
 
 ![PUE breakdown](figures/03_pue_breakdown.png)
 
-Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 — a **simulated annualized saving under the model's COP sensitivity assumption (+3% per °C)**, not a measured result, and only worth pursuing *after* the capacity fix in §4 (a higher setpoint eats into the thermal margin needed during a failure).
+Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 — a **simulated annualized saving under the model's COP sensitivity assumption (+3% per °C)**, not a measured result, and only worth pursuing *after* the capacity fix in §7 (a higher setpoint eats into the thermal margin needed during a failure).
 
-| Capacity | Value |
+### Capacity
+
+| KPI | Value |
 |---|---|
 | IT Peak | 456 kW |
 | Electrical N+1 Headroom | 118 kW |
@@ -116,7 +159,7 @@ Zero additional installed capacity. This is the architecture applied in the fina
 
 ## Capacity planning & decisions
 
-Using the `DIM_Scenario` table (§2), remaining cooling headroom is projected against additional IT load:
+Using the `DIM_Scenario` table (§4), remaining cooling headroom is projected against additional IT load:
 
 ![IT growth scenarios](figures/06_it_growth_scenarios.png)
 
