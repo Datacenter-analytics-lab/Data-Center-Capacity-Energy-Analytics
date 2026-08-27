@@ -2,8 +2,16 @@
 
 **Tier III–aligned simulated architecture for energy efficiency, infrastructure resilience, and capacity planning.**
 
-> **Disclaimer:** All operational data in this repository are synthetic and generated for analytical demonstration. No confidential operational data are used.
+## Project Type
 
+This is a portfolio project based on synthetic data.
+
+The objective is to demonstrate how operational telemetry, energy analytics
+and data modeling can be used to evaluate data center capacity, efficiency,
+resilience and infrastructure constraints.
+
+The model is intentionally simplified and does not represent a production
+data center or replace electrical/mechanical engineering studies.
 ## Table of contents
 
 1. [Executive summary](#executive-summary)
