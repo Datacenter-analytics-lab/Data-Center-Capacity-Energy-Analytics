@@ -27,7 +27,7 @@
 
 This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
 
-The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this at zero additional cost. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
+The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
 
 > **North Star Metric: Cooling N+1 Headroom at Peak**
 > This is the single figure the rest of the analysis revolves around — it's what failed in the original design, what the correction restored, and what ultimately caps how much IT growth the site can accept.
@@ -100,7 +100,7 @@ Every number elsewhere in this document is either measured by the simulation, fi
 
 ## Simulation methodology
 
-Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
+The Schneider methodology was used as an additional sizing reference: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
 
 ![Thermal load breakdown](figures/02_thermal_breakdown.png)
 
