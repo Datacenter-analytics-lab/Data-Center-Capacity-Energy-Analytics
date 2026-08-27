@@ -70,58 +70,58 @@ Strict star schema. Each fact table represents an independent measurement or sim
 **Column-level detail** (analytically relevant columns only — each table carries a few more housekeeping fields):
 
 `FACT_IT_Load`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
-| Timestamp | datetime | 15-min interval | Simulation |
-| Room_ID | text | Room A / Room B | Simulation |
-| IT_Load_kW | decimal | IT power draw | Model |
-| Status | text | Active / etc. | Simulation |
+| Column | Type | Meaning |
+|---|---|---|
+| Timestamp | datetime | 15-min interval | 
+| Room_ID | text | Room A / Room B | 
+| IT_Load_kW | decimal | IT power draw |
+| Status | text | Active / etc. | 
 
 `FACT_UPS`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
-| Timestamp | datetime | 15-min interval | Simulation |
-| UPS_ID | text | Equipment identifier | Simulation |
-| Output_Load_kW | decimal | Power delivered to IT | Model |
-| UPS_Loss_kW | decimal | No-load + proportional loss | Derived |
+| Column | Type | Meaning | 
+|---|---|---|
+| Timestamp | datetime | 15-min interval |
+| UPS_ID | text | Equipment identifier | 
+| Output_Load_kW | decimal | Power delivered to IT |
+| UPS_Loss_kW | decimal | No-load + proportional loss | 
 | Load_Percent | decimal | Output ÷ rated capacity | Derived |
-| Status | text | Online / Maintenance / Fault / Bypass | Simulation |
+| Status | text | Online / Maintenance / Fault / Bypass |
 
 `FACT_Thermal_Load`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
-| Timestamp | datetime | 15-min interval | Simulation |
-| IT_Thermal_Load_kWth | decimal | IT heat (1:1 from IT load) | Derived |
+| Column | Type | Meaning |
+|---|---|---|
+| Timestamp | datetime | 15-min interval | 
+| IT_Thermal_Load_kWth | decimal | IT heat (1:1 from IT load) | 
 | UPS_Thermal_Load_kWth | decimal | UPS loss as heat | Derived |
-| Power_Distribution_Thermal_Load_kWth | decimal | Distribution loss as heat | Derived |
-| Total_Thermal_Load_kWth | decimal | Sum of all thermal sources | Derived |
+| Power_Distribution_Thermal_Load_kWth | decimal | Distribution loss as heat |
+| Total_Thermal_Load_kWth | decimal | Sum of all thermal sources | 
 
 `FACT_Cooling`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
-| Timestamp | datetime | 15-min interval | Simulation |
-| Cooling_Equipment_ID | text | Chiller identifier | Simulation |
-| Cooling_Power_kW | decimal | Electrical input | Model |
-| Cooling_Output_kWth | decimal | Thermal output | Model |
-| Efficiency_COP | decimal | Output ÷ electrical input | Derived |
+| Column | Type | Meaning | 
+|---|---|---|
+| Timestamp | datetime | 15-min interval | 
+| Cooling_Equipment_ID | text | Chiller identifier | 
+| Cooling_Power_kW | decimal | Electrical input | 
+| Cooling_Output_kWth | decimal | Thermal output |
+| Efficiency_COP | decimal | Output ÷ electrical input | 
 | Status | text | Active / Degraded | Simulation |
-| Alarm_Code | text | Linked alarm, if any | Simulation |
+| Alarm_Code | text | Linked alarm, if any | 
 
 `FACT_Electrical_Meter`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
+| Column | Type | Meaning | 
+|---|---|---|
 | Timestamp | datetime | 15-min interval | Simulation |
 | Power_kW | decimal | Total facility power | Model (independent meter, not derived by formula) |
 | PowerFactor | decimal | Active ÷ apparent power | Model |
 
 `FACT_Alarms`
-| Column | Type | Meaning | Source |
-|---|---|---|---|
-| Alarm_ID | text | Event identifier (1 deliberate duplicate) | Simulation |
-| Start_Timestamp / End_Timestamp | datetime | Event window | Simulation |
+| Column | Type | Meaning | 
+|---|---|---|
+| Alarm_ID | text | Event identifier (1 deliberate duplicate) | 
+| Start_Timestamp / End_Timestamp | datetime | Event window | 
 | Equipment_ID | text | Linked equipment | Simulation |
-| Service_Impacting | boolean | Component-level impact flag | Simulation |
-| IT_Outage | boolean | Actual IT service interruption (always False in this run) | Simulation |
+| Service_Impacting | boolean | Component-level impact flag | 
+| IT_Outage | boolean | Actual IT service interruption (always False in this run) |
 
 ## Assumptions & planning parameters
 
