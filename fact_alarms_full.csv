@@ -1,0 +1,15 @@
+Alarm_ID,Start_Timestamp,End_Timestamp,Equipment_ID,Equipment_Type,Alarm_Type,Severity,Description,Status,Root_Cause_Category,Service_Impacting,IT_Outage
+ALM-0001,2026-07-30 14:12:00,2026-07-30 15:05:00,UPS-01,UPS,High Load,Critical,UPS-01 load exceeded 90% capacity during peak IT demand,Resolved,Capacity,FALSE,FALSE
+ALM-0002,2026-08-03 09:00:00,2026-08-03 10:30:00,GEN-01,Generator,Scheduled Test,Low,"Monthly generator test, no load transfer issue",Resolved,Maintenance,FALSE,FALSE
+ALM-0003,2026-08-10 03:22:00,2026-08-10 07:48:00,CHILLER-02,Cooling,Degraded Output,Critical,"CHILLER-02 cooling output dropped below setpoint, CHILLER-01 and CHILLER-03 absorbed load",Resolved,Equipment Failure,TRUE,FALSE
+ALM-0004,2026-08-10 04:05:00,2026-08-10 07:50:00,ROOM-A,Environmental,Temperature Excursion,High,Room A supply temperature exceeded threshold during CHILLER-02 event,Resolved,Cooling,TRUE,FALSE
+ALM-0005,2026-08-15 22:10:00,2026-08-16 06:00:00,SENSOR-ENV-04,Sensor,Communication Loss,Medium,"Environmental sensor stopped reporting overnight, gap in readings",Resolved,Data Quality,FALSE,FALSE
+ALM-0006,2026-08-18 01:00:00,2026-08-18 03:30:00,UPS-02,UPS,Planned Maintenance,Low,UPS-02 taken offline for planned maintenance; UPS-01 and UPS-03 carried the critical IT load while maintaining the required operational configuration.,Resolved,Maintenance,FALSE,FALSE
+ALM-0007,2026-08-05 11:00:00,2026-08-05 11:45:00,CHILLER-01,Cooling,Sensor Glitch,Low,"Brief supply temperature spike, no corresponding load change, likely sensor fault",Resolved,Sensor Fault,FALSE,FALSE
+ALM-0007,2026-08-05 11:00:00,2026-08-05 11:45:00,CHILLER-01,Cooling,Sensor Glitch,Low,"Duplicate entry, same event logged twice by monitoring system",Resolved,Sensor Fault,FALSE,FALSE
+ALM-0008,2026-08-12 16:40:00,2026-08-12 16:55:00,MTR-UTILITY-01,Electrical,Low Power Factor,Medium,Power factor dropped below 0.95 briefly during peak load,Resolved,Electrical,FALSE,FALSE
+ALM-0009,2026-08-22 02:00:00,2026-08-22 02:20:00,UPS-01,UPS,Battery Self-Test,Low,"Scheduled battery self-test, brief runtime dip",Resolved,Maintenance,FALSE,FALSE
+ALM-0010,2026-08-20 13:15:00,2026-08-20 13:15:00,CHILLER-02,Cooling,Efficiency Drift,Medium,"CHILLER-02 efficiency trending down since ALM-0003 event, under observation, still open",Open,Equipment Degradation,FALSE,FALSE
+ALM-0011,2026-08-14 22:00:00,2026-08-14 23:15:00,UPS-01,UPS,Fault,Critical,"UPS-01 entered fault state, battery voltage dropped during event; UPS-02 and UPS-03 absorbed the critical IT load, N+1 redundancy maintained throughout",Resolved,Equipment Failure,FALSE,FALSE
+ALM-0012,2026-08-02 09:00:00,2026-08-02 13:00:00,CHILLER-03,Cooling,Planned Maintenance,Low,"Planned shutdown of CHILLER-03 for annual heat exchanger cleaning. CHILLER-01 and CHILLER-02 operating nominally, room temperature held stable at 22C.",Resolved,Maintenance,FALSE,FALSE
+ALM-0013,2026-08-07 10:00:00,2026-08-07 12:00:00,TRANSFORMER-01,Electrical,Planned Maintenance,Low,TRANSFORMER-01 locked out for oil insulation testing. Site load automatically transferred to TRANSFORMER-02. No impact.,Resolved,Maintenance,FALSE,FALSE
