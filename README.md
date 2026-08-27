@@ -9,7 +9,7 @@
 1. [Executive summary](#executive-summary)
 2. [Business questions](#business-questions)
 3. [Architecture](#architecture)
-4. [Data model](#data-model)
+4. [Assumptions & planning parameters](#assumptions--planning-parameters)
 5. [Simulation methodology](#simulation-methodology)
 6. [Key metrics](#key-metrics)
 7. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
@@ -123,7 +123,7 @@ Strict star schema. Each fact table represents an independent measurement or sim
 | Service_Impacting | boolean | Component-level impact flag | Simulation |
 | IT_Outage | boolean | Actual IT service interruption (always False in this run) | Simulation |
 
-## Data model
+## Assumptions & planning parameters
 
 `DIM_Scenario` is the planning layer used for capacity projections in [§8](#capacity-planning--decisions):
 
