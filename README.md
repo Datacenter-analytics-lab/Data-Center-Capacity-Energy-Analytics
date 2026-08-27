@@ -52,7 +52,7 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 Strict star schema. Every fact table carries a physically independent measurement — no fact-to-fact relationships, no value derived from another table's formula.
 
 **Infrastructure at a glance:**
-- **Power:** 2 transformers of 800 kW each, N+1 (either one alone covers the full site load)
+- **Power:** 2 transformers of 800 kW each(simplified active-power model), N+1 (either one alone covers the full site load)
 - **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
 - **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after)
 
