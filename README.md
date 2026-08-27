@@ -25,7 +25,7 @@
 
 ## Executive summary
 
-This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
+This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number.
 
 The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth fixed this. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
 
@@ -176,7 +176,15 @@ Cooling crosses zero headroom at **~70 kW** of additional load and stays the bin
 | Raise cooling setpoint (18°C→22°C) | CONDITIONAL | Energy gain vs. thermal margin — sequence after the capacity fix above |
 
 ---
+## Recommendations
 
+Each recommendation below is tied to a modelled finding, not a generic best practice — and sequenced deliberately, since applying them out of order would undo the capacity fix in §7.
+
+- Install an automatic capacitor bank. Power factor drops below 0.95 at peak load (ALM-0008), driven by cooling motor inductive load — not a random glitch, a predictable consequence of running cooling equipment near its rated output. A capacitor bank corrects this, avoids utility power-factor penalties, and frees up real transformer capacity (kW) that inductive reactive load is currently consuming.
+- Consider modular UPS for the next capacity expansion. UPS units run at 43.4% utilization on average — a direct, unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
+Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§4) are negligible. This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
+
+---
 ## Reliability & data governance
 
 100% IT service availability over 28 days is a **simulation result**, not proof the site meets the Uptime Institute's Tier III annual target (99.982%, 1.6h/year) — the window is too short to extrapolate, and Tier III status can only be conferred by an Uptime Institute audit of a real facility. This project does not claim certification.
