@@ -54,7 +54,7 @@ The lowest N+1 margin among the three critical subsystems (electrical, UPS, cool
 
 ## Architecture
 
-Strict star schema. Every fact table carries a physically independent measurement — no fact-to-fact relationships, no value derived from another table's formula.
+Strict star schema. Every fact table carries a physically independent measurement — No fact table is used as a calculated substitute for another fact table's measurement.
 
 ![Star schema](figures/01_star_schema.png)
 
