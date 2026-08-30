@@ -17,6 +17,28 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 > | Binding constraint   | Cooling         | Cooling          |
 > | N+1 headroom at peak | **−76 kWth**    | **+74 kWth**     |
 
+## Key Findings
+
+| Finding                           |                          Result |
+| --------------------------------- | ------------------------------: |
+| **Binding constraint**            |                         Cooling |
+| **Cooling N+1 headroom at peak**  |                    **+74 kWth** |
+| **Recommended IT growth range**   |                      **+50 kW** |
+| **Modeled thermal tipping point** | **~69.5 kW additional IT load** |
+| **PUE**                           |                        **1.50** |
+
+### What the model shows
+
+* **Cooling is the current growth constraint.** After correcting the cooling topology, cooling provides **+74 kWth of N+1 headroom at peak**, compared with **+144 kW for UPS** and **+118 kW for electrical capacity**.
+
+* **N+1 resilience can be restored without increasing installed cooling capacity.** Reconfiguring the original **2 × 450 kWth** design into **3 × 300 kWth** keeps the same **900 kWth installed capacity**, while increasing N+1 available capacity from **450 to 600 kWth**.
+
+* **+50 kW of additional IT load is the recommended planning range.** At this scenario, all three infrastructure margins remain positive, with **20.9 kWth of cooling headroom**, **94.4 kW of UPS headroom**, and **67.7 kW of electrical headroom**.
+
+* **~69.5 kW is the modeled thermal tipping point.** Beyond this level, cooling N+1 headroom reaches zero. The **+70 kW scenario is therefore a boundary condition, not a comfortable growth target**.
+
+* **The facility PUE is 1.50 over the 28-day simulation.** Cooling accounts for **88.0 MWh** of energy consumption against **262.8 MWh of IT energy**.
+
 ## At a glance
 
 |                         | Average  | Peak     |
