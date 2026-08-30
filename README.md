@@ -361,4 +361,9 @@ Full 28-day tables aren't included here (5,000–8,000 rows each). `data/` conta
 | `fact_alarms_full.csv` | 14 | Complete alarm log |
 
 **Sources:**
+- Schneider Electric, Data Center Science Center — *White Paper 25: Calculating Total Cooling Requirements for Data Centers* (Neil Rasmussen)
+- Schneider Electric, Data Center Science Center — *White Paper 3: Calculating Total Power Requirements for Data Centers* (Richard L. Sawyer)
+- Uptime Institute — Tier III criteria (N+1 redundancy, concurrent maintainability, 99.982% availability target)
+- ASHRAE TC 9.9 — recommended thermal envelope for data center equipment (Class A1)
+
 All operational data, capacities, and incidents in this project are simulated and calibrated against these public references. They do not represent any real data center's actual configuration.
