@@ -1,6 +1,6 @@
 # Data Center Capacity & Energy Analytics
 
-**Tier III–aligned simulated architecture for energy efficiency, infrastructure resilience, and capacity planning.**
+**Decision-support model for energy efficiency, N+1 resilience and IT capacity planning.**
 
 > **Disclaimer:** All operational data in this repository are synthetic and generated for analytical demonstration. No confidential operational data are used.
 
