@@ -2,36 +2,49 @@
 
 **Tier III–aligned simulated architecture for energy efficiency, infrastructure resilience, and capacity planning.**
 
-## Project Type
-The objective or this project is to demonstrate how operational telemetry, energy analytics
-and data modeling can be used to evaluate data center capacity, efficiency,
-resilience and infrastructure constraints.
+> **Disclaimer:** All operational data in this repository are synthetic and generated for analytical demonstration. No confidential operational data are used.
 
-The model is intentionally simplified and does not represent a production
-data center or replace electrical/mechanical engineering studies.
+## Project Type
+
+The objective of this project is to demonstrate how operational telemetry, energy analytics, and data modeling can be used to evaluate data center capacity, efficiency, resilience, and infrastructure constraints.
+
+The model is intentionally simplified and does not represent a production data center or replace electrical/mechanical engineering studies.
+
+## At a glance
+
+| | Average | Peak |
+|---|---|---|
+| IT load | 391 kW | 456 kW |
+| Facility power | 586 kW | 682 kW |
+| Site thermal load | 455 kWth | 526 kWth |
+| Cooling electrical load | 131 kW | 157 kW |
+
+*Average and peak values are each the highest/mean observed independently over the 28-day simulation — the facility power peak and the IT load peak occur at different moments (see [§9](#the-main-finding-cooling-redundancy-before-and-after) and the Peak Energy Balance table in [§8](#key-metrics)), driven by a lower cooling COP at that specific interval, not by higher IT demand.*
 
 ## Table of contents
 
-1. [Executive summary](#executive-summary)
-2. [Business questions](#business-questions)
-3. [Architecture](#architecture)
-4. [Assumptions & planning parameters](#assumptions--planning-parameters)
-5. [Simulation methodology](#simulation-methodology)
-6. [Key metrics](#key-metrics)
-7. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
-8. [Capacity planning & decisions](#capacity-planning--decisions)
-9. [Recommendations](#recommendations)
-10. [Reliability & data governance](#reliability--data-governance)
-11. [Incident deep dive](#incident-deep-dive)
-12. [Model validation](#model-validation)
-13. [What this model does NOT prove](#what-this-model-does-not-prove)
-14. [Sample data & sources](#sample-data--sources)
+1. [Project Type](#project-type)
+2. [At a glance](#at-a-glance)
+3. [Executive summary](#executive-summary)
+4. [Business questions](#business-questions)
+5. [Architecture](#architecture)
+6. [Assumptions & planning parameters](#assumptions--planning-parameters)
+7. [Simulation methodology](#simulation-methodology)
+8. [Key metrics](#key-metrics)
+9. [The main finding: cooling redundancy, before and after](#the-main-finding-cooling-redundancy-before-and-after)
+10. [Capacity planning & decisions](#capacity-planning--decisions)
+11. [Recommendations](#recommendations)
+12. [Reliability & data governance](#reliability--data-governance)
+13. [Incident deep dive](#incident-deep-dive)
+14. [Model validation](#model-validation)
+15. [What this model does NOT prove](#what-this-model-does-not-prove)
+16. [Sample data & sources](#sample-data--sources)
 
 ## Executive summary
 
-This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number
+This project simulates 28 days of operation for a Tier III–aligned data center to answer one recurring operational question: **how much additional IT load can this site safely absorb without breaking N+1 redundancy?** Every part of this repository — the star schema, the thermal methodology, the incident simulation — exists to answer that question with a number, not an opinion.
 
-The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth restored it **at the same installed capacity** — no increase in kWth
+The headline result: the site's original cooling design (2 chillers of 450 kWth) looked comfortably sized on paper but **did not actually hold N+1 redundancy** at peak load. Re-splitting the same installed capacity into 3 chillers of 300 kWth restored it **at the same installed capacity** — no increase in kWth. That correction — and its knock-on effects on PUE, growth capacity, and decision-making — is the throughline of everything below.
 
 > **North Star Metric: Binding Constraint N+1 Headroom**
 > The lowest N+1 margin among the three critical subsystems (electrical, UPS, cooling) — whichever one it is, that's the number that actually caps growth and defines "safe." It currently sits at cooling (+74 kWth), but the metric isn't tied to cooling specifically: if cooling capacity were increased further, this North Star would simply track whichever subsystem became the new binding constraint.
@@ -43,7 +56,7 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 
 ## Business questions
 
-| # | Question | Answer |
+| Category | Question | Answer |
 |---|---|---|
 | Energy | How efficient is the facility? | PUE **1.50** |
 | Capacity | How much capacity remains? | Cooling is limiting, **~74 kWth** headroom at peak |
@@ -58,9 +71,9 @@ The headline result: the site's original cooling design (2 chillers of 450 kWth)
 Strict star schema. Each fact table represents an independent measurement or simulated telemetry stream — derived engineering quantities (like `FACT_Thermal_Load`, built from IT load + losses + lighting + occupants) are explicitly identified as model outputs, not raw sensor readings. No fact-to-fact relationships: everything correlates through shared dimensions.
 
 **Infrastructure at a glance:**
-- **Power:** 2 transformers of 800 kW each (simplified active-power model), N+1 (either one alone covers the full site load)
+- **Power:** 2 transformers of 800 kW each, N+1 (either one alone covers the full site load)
 - **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
-- **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§7](#the-main-finding-cooling-redundancy-before-and-after). Cooling medium (chilled water vs. direct expansion) and physical loop topology are **not specified** in the model — it tests capacity, not piping design, which would require a real engineering drawing.
+- **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant) — the corrected design, see [§9](#the-main-finding-cooling-redundancy-before-and-after). Cooling medium (chilled water vs. direct expansion) and physical loop topology are **not specified** in the model — it tests capacity, not piping design, which would require a real engineering drawing.
 
 ![Star schema](figures/01_star_schema.png)
 
@@ -78,60 +91,60 @@ Strict star schema. Each fact table represents an independent measurement or sim
 `FACT_IT_Load`
 | Column | Type | Meaning |
 |---|---|---|
-| Timestamp | datetime | 15-min interval | 
-| Room_ID | text | Room A / Room B | 
+| Timestamp | datetime | 15-min interval |
+| Room_ID | text | Room A / Room B |
 | IT_Load_kW | decimal | IT power draw |
-| Status | text | Active / etc. | 
+| Status | text | Active / etc. |
 
 `FACT_UPS`
-| Column | Type | Meaning | 
+| Column | Type | Meaning |
 |---|---|---|
 | Timestamp | datetime | 15-min interval |
-| UPS_ID | text | Equipment identifier | 
+| UPS_ID | text | Equipment identifier |
 | Output_Load_kW | decimal | Power delivered to IT |
-| UPS_Loss_kW | decimal | No-load + proportional loss | 
-| Load_Percent | decimal | Output ÷ rated capacity | Derived |
+| UPS_Loss_kW | decimal | No-load + proportional loss |
+| Load_Percent | decimal | Output ÷ rated capacity |
 | Status | text | Online / Maintenance / Fault / Bypass |
 
 `FACT_Thermal_Load`
 | Column | Type | Meaning |
 |---|---|---|
-| Timestamp | datetime | 15-min interval | 
-| IT_Thermal_Load_kWth | decimal | IT heat (1:1 from IT load) | 
-| UPS_Thermal_Load_kWth | decimal | UPS loss as heat | Derived |
+| Timestamp | datetime | 15-min interval |
+| IT_Thermal_Load_kWth | decimal | IT heat (1:1 from IT load) |
+| UPS_Thermal_Load_kWth | decimal | UPS loss as heat |
 | Power_Distribution_Thermal_Load_kWth | decimal | Distribution loss as heat |
-| Total_Thermal_Load_kWth | decimal | Sum of all thermal sources | 
+| Total_Thermal_Load_kWth | decimal | Sum of all thermal sources |
 
 `FACT_Cooling`
-| Column | Type | Meaning | 
+| Column | Type | Meaning |
 |---|---|---|
-| Timestamp | datetime | 15-min interval | 
-| Cooling_Equipment_ID | text | Chiller identifier | 
-| Cooling_Power_kW | decimal | Electrical input | 
+| Timestamp | datetime | 15-min interval |
+| Cooling_Equipment_ID | text | Chiller identifier |
+| Cooling_Power_kW | decimal | Electrical input |
 | Cooling_Output_kWth | decimal | Thermal output |
-| Efficiency_COP | decimal | Output ÷ electrical input | 
-| Status | text | Active / Degraded | Simulation |
-| Alarm_Code | text | Linked alarm, if any | 
+| Efficiency_COP | decimal | Output ÷ electrical input |
+| Status | text | Active / Degraded |
+| Alarm_Code | text | Linked alarm, if any |
 
 `FACT_Electrical_Meter`
-| Column | Type | Meaning | 
+| Column | Type | Meaning |
 |---|---|---|
-| Timestamp | datetime | 15-min interval | Simulation |
-| Power_kW | decimal | Total facility power | Model (independent meter, not derived by formula) |
-| PowerFactor | decimal | Active ÷ apparent power | Model |
+| Timestamp | datetime | 15-min interval |
+| Power_kW | decimal | Total facility power |
+| PowerFactor | decimal | Active ÷ apparent power |
 
 `FACT_Alarms`
-| Column | Type | Meaning | 
+| Column | Type | Meaning |
 |---|---|---|
-| Alarm_ID | text | Event identifier (1 deliberate duplicate) | 
-| Start_Timestamp / End_Timestamp | datetime | Event window | 
-| Equipment_ID | text | Linked equipment | Simulation |
-| Service_Impacting | boolean | Component-level impact flag | 
+| Alarm_ID | text | Event identifier (1 deliberate duplicate) |
+| Start_Timestamp / End_Timestamp | datetime | Event window |
+| Equipment_ID | text | Linked equipment |
+| Service_Impacting | boolean | Component-level impact flag |
 | IT_Outage | boolean | Actual IT service interruption (always False in this run) |
 
 ## Assumptions & planning parameters
 
-`DIM_Scenario` is the planning layer used for capacity projections in [§8](#capacity-planning--decisions):
+`DIM_Scenario` is the planning layer used for capacity projections in [§10](#capacity-planning--decisions):
 
 ```
 Scenario_ID   Additional_IT_kW
@@ -158,7 +171,7 @@ Every number elsewhere in this document is either measured by the simulation, fi
 
 ## Simulation methodology
 
-Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§7) — not as a claim about any specific equipment's real-world behaviour.
+Thermal load follows the Schneider Electric White Paper 25 methodology: IT electrical power converts 1:1 to heat, plus UPS losses, distribution losses, lighting, and occupants. The Schneider method was used as an **additional sizing reference** for validating cooling capacity (§9) — not as a claim about any specific equipment's real-world behaviour.
 
 ![Thermal load breakdown](figures/02_thermal_breakdown.png)
 
@@ -178,7 +191,7 @@ Data generation uses no non-deterministic random function: noise is a trigonomet
 
 ![PUE breakdown](figures/03_pue_breakdown.png)
 
-Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 — a **simulated annualized saving under the model's COP sensitivity assumption (+3% per °C)**, not a measured result, and only worth pursuing *after* the capacity fix in §7 (a higher setpoint eats into the thermal margin needed during a failure).
+Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46 — a **simulated annualized saving under the model's COP sensitivity assumption (+3% per °C)**, not a measured result, and only worth pursuing *after* the capacity fix in §9 (a higher setpoint eats into the thermal margin needed during a failure).
 
 ### Capacity
 
@@ -229,7 +242,7 @@ Zero additional installed capacity. This is the architecture applied in the fina
 
 ## Capacity planning & decisions
 
-Using the `DIM_Scenario` table (§4), remaining headroom at each subsystem is queried directly from the model for every scenario — not interpolated:
+Using the `DIM_Scenario` table (§6), remaining headroom at each subsystem is queried directly from the model for every scenario — not interpolated:
 
 | Additional IT | Cooling headroom | UPS headroom | Electrical headroom | Binding constraint | Verdict |
 |---|---|---|---|---|---|
@@ -241,6 +254,8 @@ Using the `DIM_Scenario` table (§4), remaining headroom at each subsystem is qu
 | +100 kW | −32.6 kWth | 44.4 kW | 17.7 kW | Cooling | Not recommended |
 
 The exact tipping point sits at **~69.5 kW** — 70 kW itself already crosses it, by a margin so thin (−0.5 kWth) it's effectively the boundary, not a comfortable cutoff.
+
+*Why each added kW of IT load costs slightly more than 1 kWth of cooling headroom: additional IT load also marginally increases UPS and distribution losses (per §7's thermal formulas), so the net thermal impact factor is ~1.07 kWth per additional IT kW — not a 1:1 pass-through.*
 
 ![IT growth scenarios](figures/06_it_growth_scenarios.png)
 
@@ -258,11 +273,11 @@ Cooling stays the binding constraint throughout the tested range — electrical 
 
 ## Recommendations
 
-Each recommendation below is tied to a modelled finding, not a generic best practice — and sequenced deliberately, since applying them out of order would undo the capacity fix in §7.
+Each recommendation below is tied to a modelled finding, not a generic best practice — and sequenced deliberately, since applying them out of order would undo the capacity fix in §9.
 
 1. **Potential mitigation: power-factor correction, subject to harmonic and electrical-system assessment.** Power factor drops below 0.95 at peak load (`ALM-0008`), consistent with increased inductive loading from cooling equipment — the model does not explicitly simulate motor reactive components, so this is a correlation the data supports, not a modelled causal mechanism. Correcting power factor would primarily improve **kVA headroom / transformer utilization** for the same active (kW) load, and avoid utility power-factor penalties — not reduce the site's real active power draw.
 2. **Consider modular UPS for the next capacity expansion.** UPS units run at 43.4% utilization on average — a direct, unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
-3. **Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§4) are negligible.** This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
+3. **Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations ([§15](#what-this-model-does-not-prove)) are negligible.** This model doesn't quantify recirculation losses or humidification overhead — containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
 
 ## Reliability & data governance
 
@@ -314,6 +329,7 @@ This simulation does **not**:
 - Predict real equipment performance
 - Replace a detailed mechanical/electrical engineering study
 - Represent the configuration of any existing data center
+- Quantify building-envelope heat gain or humidification overhead — these are not modelled and are treated as out of scope, not as negligible
 
 Every figure here is either a direct simulation output or an explicitly labelled assumption — where a result depends on one (COP sensitivity, floor area, headcount), that dependency is stated next to the number, not buried in a footnote.
 
