@@ -86,7 +86,7 @@ Strict star schema. Each fact table represents an independent measurement or sim
 
 **Infrastructure at a glance:**
 
-- **Power:** 2 transformers of 1,000 kVA each, rated 800 kW active at a 0.8 power factor, N+1 (either one alone covers the full site load)
+- **Power:- **Power:** 2 transformers of 1,000 kVA each, rated 800 kW active at a 0.8 power factor, N+1 (either one alone covers the full site load)
 - **UPS:** 3 units of 300 kW each, N+1 (2 required, 1 redundant)
 - **Cooling:** 3 chillers of 300 kWth each, N+1 (2 required, 1 redundant), the corrected design, see §8. Cooling medium (chilled water vs. direct expansion) and physical loop topology are **not specified** in the model: it tests capacity, not piping design, which would require a real engineering drawing.
 
@@ -190,6 +190,7 @@ Every number elsewhere in this document is either measured by the simulation, fi
 | IT heat conversion        | 1:1                       | Schneider WP25 methodology                                                                                                                                         |
 | Redundancy topology       | N+1                       | Architecture                                                                                                                                                       |
 | Generator telemetry       | Not modelled              | Limitation                                                                                                                                                         |
+| Transformer rating        | 1,000 kVA at 0.8 PF       | Assumption (800 kW active)  |
 
 ## Simulation methodology
 
@@ -228,6 +229,8 @@ Raising the cooling supply setpoint from 18°C to 22°C would bring PUE to 1.46.
 ![Capacity constraint](figures/05_capacity_constraint.png)
 
 **Transformer loading is driven by power factor, not by active power.** Apparent power peaks at 712 kVA on 5 August at 15:30 (677 kW at a 0.951 power factor), which is *not* the moment of the facility active-power peak on 12 August (682 kW at 0.961, or 710 kVA). Against a 1,000 kVA nameplate, the transformer therefore runs at 71% of rating in the worst case, even when a single unit carries the full site load. Average apparent power over the period is 610 kVA.
+
+Transformer loading is driven by power factor, not by active power. Apparent power peaks at 712 kVA on 5 August at 15:30 (677 kW at a 0.951 power factor), which is not the moment of the facility active-power peak on 12 August (682 kW at 0.961, or 710 kVA). Against a 1,000 kVA nameplate, the transformer therefore runs at 71% of rating in the worst case, even when a single unit carries the full site load. Average apparent power over the period is 610 kVA.
 
 ### Peak Energy Balance
 
@@ -299,7 +302,7 @@ Cooling stays the binding constraint throughout the tested range. Electrical (11
 
 Each recommendation below is tied to a modelled finding, not a generic best practice, and sequenced deliberately, since applying them out of order would undo the capacity fix in §8.
 
-1. **Power-factor correction: an optimisation, not a constraint, subject to harmonic and electrical-system assessment.** Power factor reaches 0.95 at high load (`ALM-0008`), consistent with increased inductive loading from cooling equipment. The model does not explicitly simulate motor reactive components, so this is a correlation the data supports, not a modelled causal mechanism. Apparent power peaks at 712 kVA against a 1,000 kVA transformer nameplate, so the site runs at 71% of rating even when a single transformer carries the full load, leaving roughly 288 kVA of headroom. Correcting power factor would widen that margin and avoid utility power-factor penalties. It would not reduce the site's real active power draw, and it is not currently a limiting factor.
+1. **Power-factor correction: an optimisation, not a constraint, subject to harmonic and electrical-system assessment**. Power factor reaches 0.95 at high load (ALM-0008), consistent with increased inductive loading from cooling equipment. The model does not explicitly simulate motor reactive components, so this is a correlation the data supports, not a modelled causal mechanism. Apparent power peaks at 712 kVA against a 1,000 kVA transformer nameplate, so the site runs at 71% of rating even when a single transformer carries the full load, leaving roughly 288 kVA of headroom. Correcting power factor would widen that margin and avoid utility power-factor penalties. It would not reduce the site's real active power draw, and it is not currently a limiting factor
 2. **Consider modular UPS for the next capacity expansion.** UPS units run at 43.4% utilization on average, a direct and unavoidable consequence of sizing 3×300 kW for N+1 on ~390 kW of average load, not an inefficiency to "fix" by removing a unit (see the Decision matrix: that trade loses resilience for a 0.02 PUE gain, rejected). Modular UPS would let inactive power modules idle in rotation, pulling active modules closer to their efficiency sweet spot without touching the N+1 topology.
 3. **Evaluate hot/cold aisle containment before assuming the humidification and building-envelope limitations (§14) are negligible.** This model doesn't quantify recirculation losses or humidification overhead. Containment is the standard mitigation for both, and is worth costing out precisely because the model can't tell you how much margin it would recover.
 
@@ -335,7 +338,7 @@ Each recommendation below is tied to a modelled finding, not a generic best prac
 
 Concurrent maintainability is demonstrated on **all three infrastructure pillars**, each with zero IT impact: `ALM-0006` (UPS maintenance), `ALM-0012` (chiller maintenance), `ALM-0013` (transformer maintenance).
 
-**Data quality:** the `ALM-0007` duplicate is kept intentionally rather than silently removed, to demonstrate a deduplication calculation (7.1%) instead of hiding the defect. The independent electrical meter reading reconciles with the sum of its component sub-systems (IT, cooling, UPS losses, auxiliary) within noise (<1%), a deliberate design choice that lets the model surface this kind of cross-source check. `ALM-0008` (power factor at 0.95 during high load) is addressed in [Recommendations](#recommendations).
+**Data quality:** the `ALM-0007` duplicate is kept intentionally rather than silently removed, to demonstrate a deduplication calculation (7.1%) instead of hiding the defect. The independent electrical meter reading reconciles with the sum of its component sub-systems (IT, cooling, UPS losses, auxiliary) within noise (<1%), a deliberate design choice that lets the model surface this kind of cross-source check. `ALM-0008` (power factor reaching 0.95 during high load) is addressed in [Recommendations](#recommendations).
 
 ## Incident deep dive
 
@@ -367,6 +370,7 @@ Every claim above rests on an explicit check, not on an assumption that the mode
 
 This simulation does **not**:
 
+- Validate the Tier III requirement for two independent distribution paths. The model tests capacity and redundancy counts, not topology, so a shared downstream switchboard would not be detected
 - Certify Tier III compliance
 - Predict real equipment performance
 - Replace a detailed mechanical/electrical engineering study
